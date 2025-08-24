@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <title>IMAGINATION — Disintegration</title>
+  <style>
+    html, body { height: 100%; margin: 0; background:#111; overflow:hidden; }
+    #ui {
+      position: fixed; top: 12px; left: 12px; z-index: 10;
+      font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color: #eee; background: rgba(0,0,0,.5); padding: 10px 12px; border-radius: 8px;
+      backdrop-filter: blur(4px);
+    }
+    #ui label { cursor: pointer; user-select: none; }
+    #ui button {
+      margin-left: 10px; padding: 6px 10px; border: 0; border-radius: 6px; cursor: pointer;
+    }
+    canvas { display:block; }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <label><input id="perm" type="checkbox"> Modo permanente</label>
+    <button id="reset">Reset</button>
+  </div>
+  <canvas id="c"></canvas>
+
+  <script>
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const uiPerm = document.getElementById('perm');
+  const uiReset = document.getElementById('reset');
+
+  function resize() {
+    const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+    canvas.width = innerWidth * dpr;
+    canvas.height = innerHeight * dpr;
+    canvas.style.width = innerWidth + 'px';
+    canvas.style.height = innerHeight + 'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    init();
+  }
+  window.addEventListener('resize', resize);
+
+  const mouse = { x: -9999, y: -9999, radius: 90 };
+  window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  window.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+
+  let particles = [];
+  const WORD = 'IMAGINATION';
+  const FONT = 'bold 120px Arial Black';
+  const GAP = 4;               // step between sampled pixels
+  const SIZE = 2;              // particle size
+  const RETURN_SPEED = 20;     // higher = slower return
+  const FADE_RATE = 0.08;      // how fast particles fade in permanent mode
+  const SCATTER = 2.6;         // initial scatter velocity scale
+
+  class Particle {
+    constructor(x, y, color='white') {
+      this.baseX = x; this.baseY = y;
+      this.x = x; this.y = y;
+      this.vx = 0; this.vy = 0;
+      this.size = SIZE;
+      this.color = color;
+      this.alpha = 1;     // 1..0 (used in permanent mode)
+      this.dead = false;
+      this.density = Math.random()*40 + 10;
+    }
+    draw() {
+      if (this.dead) return;
+      ctx.globalAlpha = this.alpha;
+      ctx.fillStyle = this.color;
+      ctx.fillRect(this.x, this.y, this.size, this.size);
+      ctx.globalAlpha = 1;
+    }
+    update(permanent) {
+      if (this.dead) return;
+
+      const dx = mouse.x - this.x;
+      const dy = mouse.y - this.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < mouse.radius) {
+        const force = (mouse.radius - dist) / mouse.radius;
+        const dirX = dx / (dist || 1);
+        const dirY = dy / (dist || 1);
+
+        // repel
+        this.x -= dirX * force * this.density;
+        this.y -= dirY * force * this.density;
+
+        // give a one-time kick outward
+        this.vx -= dirX * SCATTER * Math.random();
+        this.vy -= dirY * SCATTER * Math.random();
+
+        // in permanent mode, fade out and eventually "die"
+        if (permanent) {
+          this.alpha = Math.max(0, this.alpha - FADE_RATE);
+          if (this.alpha <= 0.02) this.dead = true;
+        }
+      } else if (!permanent) {
+        // reversible: drift back to base
+        if (this.x !== this.baseX) this.x -= (this.x - this.baseX) / RETURN_SPEED;
+        if (this.y !== this.baseY) this.y -= (this.y - this.baseY) / RETURN_SPEED;
+      }
+
+      // apply velocity & gentle damping
+      this.x += this.vx; this.y += this.vy;
+      this.vx *= 0.92; this.vy *= 0.92;
+    }
+  }
+
+  function init() {
+    // draw the word to an offscreen buffer to sample pixels
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.save();
+    ctx.font = FONT;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // create a split black/white background like the reference (optional)
+    const midX = innerWidth / 2;
+    ctx.fillStyle = '#111'; ctx.fillRect(0,0,midX,innerHeight);
+    ctx.fillStyle = '#e9e9e9'; ctx.fillRect(midX,0,innerWidth - midX, innerHeight);
+
+    // text with strong contrast
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,.35)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(WORD, innerWidth/2, innerHeight/2);
+    ctx.restore();
+
+    const img = ctx.getImageData(0, 0, innerWidth, innerHeight).data;
+
+    particles = [];
+    for (let y = 0; y < innerHeight; y += GAP) {
+      for (let x = 0; x < innerWidth; x += GAP) {
+        const i = (y * innerWidth + x) * 4;
+        const alpha = img[i + 3];
+        if (alpha > 128) particles.push(new Particle(x, y));
+      }
+    }
+  }
+
+  function animate() {
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+
+    // subtle glossy fog right side (echo of the inspiration)
+    const grad = ctx.createLinearGradient(innerWidth*0.55,0,innerWidth,0);
+    grad.addColorStop(0,'rgba(255,255,255,0)');
+    grad.addColorStop(1,'rgba(255,255,255,0.08)');
+    ctx.fillStyle = grad; ctx.fillRect(innerWidth*0.55,0,innerWidth*0.45,innerHeight);
+
+    const permanent = uiPerm.checked;
+    for (let p of particles) {
+      p.update(permanent);
+      p.draw();
+    }
+    requestAnimationFrame(animate);
+  }
+
+  uiReset.addEventListener('click', () => init());
+
+  // kick off
+  resize();
+  animate();
+  </script>
+</body>
+</html>
