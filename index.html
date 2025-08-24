@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8" />
-  <title>IMAGINATION — PRO+ (Emoções extra, conversa humana, música)</title>
+  <title>IMAGINATION — PRO STUDIO (WebM + Presets)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{
@@ -13,24 +13,12 @@
       --muted:#b9c1c7;
     }
     html, body { height: 100%; margin: 0; background:#111; overflow:hidden; }
-    #consent {
-      position: fixed; top: 12px; right: 12px; z-index: 20;
-      background: rgba(0,0,0,.7); color:#eee; padding:10px 12px; border-radius:12px; max-width:min(92vw, 520px);
-      font: 13.5px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      backdrop-filter: blur(6px);
-    }
-    #consent h2{ margin:0 0 6px; font-size:14px }
-    #consent small{ color:#c9c9c9 }
-    #consent .row{ display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap }
-    #consent button, #consent label{
-      background:#1d1d1d; color:#eaeaea; border:0; border-radius:8px; padding:6px 10px; cursor:pointer;
-    }
     #ui {
       position: fixed; top: 12px; left: 12px; z-index: 10;
       font: 13.5px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial;
       color: var(--panel-text); background: var(--panel-bg);
       padding: 10px 12px; border-radius: 12px; backdrop-filter: blur(6px);
-      max-width: min(88vw, 460px);
+      max-width: min(88vw, 520px);
     }
     #ui h1 { margin:0 0 6px; font-size:16px; letter-spacing:.3px }
     #ui .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0}
@@ -58,22 +46,23 @@
   </style>
 </head>
 <body>
-  <!-- Consentimento / Privacidade -->
-  <div id="consent">
-    <h2>Privacidade & Consentimento</h2>
-    <small>Opcional: podes usar a câmara para detetar emoções **no teu dispositivo** (sem upload). É apenas uma **estimativa** para efeitos criativos; não é diagnóstico.</small>
-    <div class="row">
-      <label><input id="consentCheck" type="checkbox"> Consinto o uso da câmara para detetar emoções</label>
-      <button id="closeConsent">OK</button>
-    </div>
-  </div>
-
   <div id="ui">
-    <h1>IMAGINATION — PRO+</h1>
+    <h1>IMAGINATION — PRO STUDIO</h1>
 
     <div class="row">
       <input id="wordInput" type="text" value="IMAGINATION" />
       <button id="resetBtn">Reset</button>
+      <label>Preset
+        <select id="presetSelect">
+          <option value="">—</option>
+          <option value="Solar">Solar</option>
+          <option value="Noite Fria">Noite Fria</option>
+          <option value="Sereno">Sereno</option>
+          <option value="Neon">Neon</option>
+          <option value="Pastel">Pastel</option>
+        </select>
+      </label>
+      <button id="applyPreset">Aplicar</button>
     </div>
 
     <div class="row">
@@ -107,22 +96,6 @@
     </div>
 
     <div class="row" style="border-top:1px solid #2a2a2a; padding-top:8px; margin-top:8px">
-      <strong>Emotion AI</strong>
-      <button id="emotionToggle">Ativar câmara</button>
-      <span id="aiStatus" class="pill warn">parado</span>
-      <label><input id="showOverlay" type="checkbox"> overlay</label>
-      <label>Manual <select id="manualEmotion">
-        <option value="">—</option>
-        <option value="alegria">alegria</option>
-        <option value="surpresa">surpresa</option>
-        <option value="tristeza">tristeza</option>
-        <option value="raiva">raiva</option>
-        <option value="neutro">neutro</option>
-      </select></label>
-    </div>
-    <div id="emoPhrase"></div>
-
-    <div class="row" style="border-top:1px solid #2a2a2a; padding-top:8px; margin-top:8px">
       <strong>Música</strong>
       <button id="musicToggle">Tocar</button>
       <label>Vol <input id="vol" type="range" min="0" max="1" step="0.01" value="0.25" /></label>
@@ -136,15 +109,22 @@
       </label>
       <input id="audioFile" type="file" accept="audio/*" />
     </div>
+
+    <div class="row" style="border-top:1px solid #2a2a2a; padding-top:8px; margin-top:8px">
+      <strong>Gravação</strong>
+      <button id="recStart">Gravar WebM</button>
+      <button id="recStop" disabled>Parar</button>
+      <a id="recDownload" download="imagination.webm" style="display:none"><button>Baixar</button></a>
+      <label>FPS <input id="recFps" type="range" min="15" max="60" value="30" /></label>
+      <span id="recStatus" class="pill warn">parado</span>
+    </div>
   </div>
 
-  <div id="credit">Privado: a câmara e o microfone (se usados) ficam no dispositivo. Sem upload.</div>
+  <div id="credit">Dica: a gravação captura o canvas e a música do app (não inclui o overlay nem microfone).</div>
   <div class="badge" id="emotionBadge" style="display:none">🙂 neutro</div>
 
   <canvas id="c"></canvas>
   <canvas id="overlay"></canvas>
-
-  <video id="video" playsinline autoplay muted style="display:none"></video>
 
   <script type="module">
     // ===== Canvas particles =====
@@ -166,19 +146,17 @@
       bgLeft: document.getElementById('bgLeft'),
       bgRight: document.getElementById('bgRight'),
       permanent: document.getElementById('permanent'),
-      showOverlay: document.getElementById('showOverlay'),
-      emotionToggle: document.getElementById('emotionToggle'),
-      aiStatus: document.getElementById('aiStatus'),
-      emoPhrase: document.getElementById('emoPhrase'),
       musicToggle: document.getElementById('musicToggle'),
       vol: document.getElementById('vol'),
       audioFile: document.getElementById('audioFile'),
-      emotionBadge: document.getElementById('emotionBadge'),
-      manualEmotion: document.getElementById('manualEmotion'),
       musicMode: document.getElementById('musicMode'),
-      consent: document.getElementById('consent'),
-      consentCheck: document.getElementById('consentCheck'),
-      closeConsent: document.getElementById('closeConsent')
+      recStart: document.getElementById('recStart'),
+      recStop: document.getElementById('recStop'),
+      recDownload: document.getElementById('recDownload'),
+      recFps: document.getElementById('recFps'),
+      recStatus: document.getElementById('recStatus'),
+      presetSelect: document.getElementById('presetSelect'),
+      applyPreset: document.getElementById('applyPreset')
     };
 
     function resize() {
@@ -227,22 +205,17 @@
       }
       update(permanent) {
         if (this.dead) return;
-
         const dx = mouse.x - this.x;
         const dy = mouse.y - this.y;
         const dist = Math.hypot(dx, dy);
-
         if (dist < mouse.radius) {
           const force = (mouse.radius - dist) / mouse.radius;
           const dirX = dx / (dist || 1);
           const dirY = dy / (dist || 1);
-
           this.x -= dirX * force * this.density;
           this.y -= dirY * force * this.density;
-
           this.vx -= dirX * SCATTER * Math.random();
           this.vy -= dirY * SCATTER * Math.random();
-
           if (ui.permanent.checked) {
             this.alpha = Math.max(0, this.alpha - 0.08);
             if (this.alpha <= 0.02) this.dead = true;
@@ -251,7 +224,6 @@
           if (this.x !== this.baseX) this.x -= (this.x - this.baseX) / RETURN_SPEED;
           if (this.y !== this.baseY) this.y -= (this.y - this.baseY) / RETURN_SPEED;
         }
-
         this.x += this.vx; this.y += this.vy;
         this.vx *= 0.92; this.vy *= 0.92;
       }
@@ -269,17 +241,13 @@
       ctx.font = FONT();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-
       drawBackground();
-
       ctx.fillStyle = '#fff';
       ctx.shadowColor = 'rgba(0,0,0,.35)';
       ctx.shadowBlur = 6;
       ctx.fillText(WORD, innerWidth/2, innerHeight/2);
       ctx.restore();
-
       const img = ctx.getImageData(0, 0, innerWidth, innerHeight).data;
-
       particles = [];
       for (let y = 0; y < innerHeight; y += GAP) {
         for (let x = 0; x < innerWidth; x += GAP) {
@@ -293,13 +261,10 @@
     function animate() {
       ctx.clearRect(0,0,innerWidth,innerHeight);
       drawBackground();
-
-      // glossy fog on right
       const grad = ctx.createLinearGradient(innerWidth*0.55,0,innerWidth,0);
       grad.addColorStop(0,'rgba(255,255,255,0)');
       grad.addColorStop(1,'rgba(255,255,255,0.08)');
       ctx.fillStyle = grad; ctx.fillRect(innerWidth*0.55,0,innerWidth*0.45,innerHeight);
-
       for (let p of particles) {
         p.size = SIZE;
         p.color = ui.dotColor.value;
@@ -309,7 +274,7 @@
       requestAnimationFrame(animate);
     }
 
-    // UI
+    // UI bindings
     ui.resetBtn.addEventListener('click', init);
     ui.wordInput.addEventListener('input', () => { WORD = ui.wordInput.value || ' '; init(); });
     ui.fontSelect.addEventListener('change', init);
@@ -323,222 +288,31 @@
     ui.bgLeft.addEventListener('input', init);
     ui.bgRight.addEventListener('input', init);
 
-    // start
+    // Presets
+    const PRESETS = {
+      "Solar": { dot:"#ffd166", left:"#1a1306", right:"#30210b", scatter:3.0, font:"Impact", music:"major" },
+      "Noite Fria": { dot:"#cfe9ff", left:"#0a0f17", right:"#101825", scatter:2.4, font:"Montserrat", music:"calm" },
+      "Sereno": { dot:"#ffffff", left:"#111111", right:"#e9e9e9", scatter:2.6, font:"Montserrat", music:"ambient" },
+      "Neon": { dot:"#39ff88", left:"#0a0a0a", right:"#111133", scatter:4.2, font:"Impact", music:"major" },
+      "Pastel": { dot:"#ffd4e5", left:"#1b181e", right:"#22202a", scatter:2.2, font:"Verdana", music:"calm" }
+    };
+    function applyPreset(name){
+      const p = PRESETS[name]; if(!p) return;
+      ui.dotColor.value = p.dot;
+      ui.bgLeft.value = p.left; ui.bgRight.value = p.right;
+      ui.scatter.value = p.scatter; SCATTER = p.scatter;
+      ui.fontSelect.value = p.font;
+      ui.musicMode.value = p.music;
+      init();
+      if (musicEngine) musicEngine.setMode(p.music);
+    }
+    ui.applyPreset.addEventListener('click', ()=> applyPreset(ui.presetSelect.value));
+
+    // Start
     function start() { resize(); animate(); }
     start();
 
-    // ====== Emotion AI (MediaPipe via CDN) ======
-    const video = document.getElementById('video');
-    let faceLandmarker = null;
-    let running = false;
-    let rafId = 0;
-
-    async function initFaceAI(){
-      try{
-        ui.aiStatus.textContent = 'a carregar…';
-        ui.aiStatus.className = 'pill warn';
-        const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest');
-        const {FaceLandmarker, FilesetResolver} = vision;
-        const resolver = await FilesetResolver.forVisionTasks(
-          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
-        );
-        faceLandmarker = await FaceLandmarker.createFromOptions(resolver, {
-          baseOptions: {
-            modelAssetPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm/face_landmarker.task'
-          },
-          runningMode: 'VIDEO',
-          numFaces: 1,
-          outputFaceBlendshapes: false
-        });
-        ui.aiStatus.textContent = 'pronto';
-        ui.aiStatus.className = 'pill ok';
-      }catch(err){
-        console.error(err);
-        ui.aiStatus.textContent = 'falhou';
-        ui.aiStatus.className = 'pill err';
-        alert('Falha ao carregar o modelo de detecção facial. Verifica a internet e tenta novamente.');
-        throw err;
-      }
-    }
-
-    async function startCamera(){
-      const stream = await navigator.mediaDevices.getUserMedia({video:true, audio:false});
-      video.srcObject = stream;
-      await video.play();
-    }
-
-    // Heurística com mais rótulos (alegria, surpresa, tristeza, raiva, neutro)
-    function classifyEmotion(landmarks){
-      const L = (i)=>landmarks[i];
-      const dist = (a,b)=> Math.hypot(a.x-b.x, a.y-b.y);
-
-      const mouthW = dist(L(61), L(291));
-      const mouthOpen = dist(L(13), L(14));
-      const faceW = dist(L(33), L(263)) || 1;
-
-      const w = mouthW/faceW, o = mouthOpen/faceW;
-
-      // sobrancelhas (aproximação)
-      const browLeft  = L(70), browRight = L(300), nose = L(1);
-      const browAvgY = (browLeft.y + browRight.y)/2;
-      const browLift = (nose.y - browAvgY);
-
-      if (o > 0.35) return {label:'surpresa'};
-      if (w > 0.52 && o < 0.28) return {label:'alegria'};
-      if (w < 0.40 && o < 0.22 && browLift < 0.02) return {label:'raiva'};
-      if (w < 0.44 && o < 0.20 && browLift > 0.04) return {label:'tristeza'};
-      return {label:'neutro'};
-    }
-
-    // ===== Conversa humana (delays) + mapeamento de emoções =====
-    const EMO = {
-      alegria: {
-        frases: [
-          "Que bom ver esse sorriso! 🌞 Que a tua alegria contagie o dia.",
-          "Adoro essa leveza — continua! ✨",
-          "Sorrisos assim iluminam tudo por aqui. 😄"
-        ],
-        musica: "major",
-        cor: "#ffd166",
-        bg: ["#0f1a10", "#1c2a1d"],
-        scatter: 3.2
-      },
-      surpresa: {
-        frases: [
-          "Uau! Algo te surpreendeu? Respira e aprecia o momento. ✨",
-          "Surpresa boa? Que venham mais descobertas! 💫"
-        ],
-        musica: "chime",
-        cor: "#f6f1d1",
-        bg: ["#100f1a", "#221d2a"],
-        scatter: 4.0
-      },
-      tristeza: {
-        frases: [
-          "Sinto contigo — respira com calma. Se quiseres, fico por aqui. 💛",
-          "Pode doer. Vamos com gentileza agora, um passo de cada vez. 🌿"
-        ],
-        musica: "calm",
-        cor: "#cde2ff",
-        bg: ["#0d121a", "#121a24"],
-        scatter: 2.0
-      },
-      raiva: {
-        frases: [
-          "Percebo a tensão. Vamos canalizar em algo construtivo? Estou contigo. 🔧",
-          "Respira fundo — 4 tempos entra, 6 sai — e seguimos. 💨"
-        ],
-        musica: "minor",
-        cor: "#ffd1d1",
-        bg: ["#1a0d0d", "#241212"],
-        scatter: 3.6
-      },
-      neutro: {
-        frases: [
-          "Tô aqui contigo. Queres uma faísca de inspiração? 🌿",
-          "Tudo bem ficar em neutro. Vamos no teu ritmo. 🤝"
-        ],
-        musica: "ambient",
-        cor: "#ffffff",
-        bg: ["#111111", "#e9e9e9"],
-        scatter: parseFloat(document.getElementById('scatter').value)
-      }
-    };
-
-    let chatState = { ultimaEmocao: "neutro", ultimaFrase: 0 };
-    function falarComDelay(texto, delay=900){
-      ui.emoPhrase.textContent = "a escrever…";
-      setTimeout(()=> ui.emoPhrase.textContent = texto, delay);
-    }
-    function responderEmocao(label){
-      const cfg = EMO[label] || EMO.neutro;
-      ui.dotColor.value = cfg.cor;
-      ui.bgLeft.value  = cfg.bg[0];
-      ui.bgRight.value = cfg.bg[1];
-      SCATTER = cfg.scatter;
-      const frases = cfg.frases;
-      const idx = (chatState.ultimaEmocao===label) ? (chatState.ultimaFrase+1)%frases.length : 0;
-      chatState.ultimaFrase = idx; chatState.ultimaEmocao = label;
-      falarComDelay(frases[idx], 900 + Math.random()*700);
-
-      // música
-      if (cfg.musica === "major") musicEngine?.setMode("major");
-      else if (cfg.musica === "minor") musicEngine?.setMode("minor");
-      else if (cfg.musica === "calm")  musicEngine?.setMode("calm");
-      else if (cfg.musica === "chime") musicEngine?.bell();
-      else musicEngine?.setMode("ambient");
-
-      // badge
-      const badge = ui.emotionBadge;
-      const map = { alegria:'😄 alegria', surpresa:'😮 surpresa', tristeza:'😔 tristeza', raiva:'😤 raiva', neutro:'🙂 neutro' };
-      badge.textContent = map[label] || '🙂 neutro';
-      badge.style.display = 'block';
-
-      init(); // redesenha com novas cores
-    }
-
-    function drawOverlay(res){
-      if(!ui.showOverlay.checked){ octx.clearRect(0,0,overlay.width, overlay.height); return; }
-      octx.clearRect(0,0,innerWidth,innerHeight);
-      if(!res || !res.faceLandmarks?.length) return;
-      const pts = res.faceLandmarks[0];
-      octx.strokeStyle = 'rgba(144,255,144,.8)';
-      octx.lineWidth = 1.5;
-      octx.beginPath();
-      for (const p of pts) octx.lineTo(p.x * innerWidth, p.y * innerHeight);
-      octx.stroke();
-    }
-
-    async function loopFace(){
-      if (!running || !faceLandmarker) return;
-      const ts = performance.now();
-      const res = faceLandmarker.detectForVideo(video, ts);
-      if (res?.faceLandmarks?.length){
-        drawOverlay(res);
-        const emo = classifyEmotion(res.faceLandmarks[0]);
-        responderEmocao(emo.label);
-      }
-      rafId = requestAnimationFrame(loopFace);
-    }
-
-    ui.emotionToggle.addEventListener('click', async ()=>{
-      try{
-        if (running){
-          running = false;
-          cancelAnimationFrame(rafId);
-          ui.emotionToggle.textContent = 'Ativar câmara';
-          ui.aiStatus.textContent = 'parado'; ui.aiStatus.className = 'pill warn';
-          ui.emotionBadge.style.display='none';
-          return;
-        }
-        if (!ui.consentCheck.checked){
-          alert('Por favor, assinala o consentimento para usar a câmara.');
-          return;
-        }
-        if (!faceLandmarker) await initFaceAI();
-        await startCamera();
-        running = true;
-        ui.emotionToggle.textContent = 'Parar';
-        ui.aiStatus.textContent = 'a detetar…'; ui.aiStatus.className = 'pill ok';
-        loopFace();
-      }catch(e){
-        console.error(e);
-        ui.aiStatus.textContent = 'erro';
-        ui.aiStatus.className = 'pill err';
-      }
-    });
-
-    // Consent banner
-    ui.closeConsent.addEventListener('click', ()=> ui.consent.style.display='none');
-
-    // Manual emotion fallback
-    ui.manualEmotion.addEventListener('change', (e)=>{
-      const v = e.target.value;
-      if (!v) return;
-      responderEmocao(v);
-    });
-
-    // ====== Music engine (ambient/major/minor/calm + bell + user track) ======
+    // ====== Music engine ======
     let musicEngine = null;
     class Music {
       constructor(){
@@ -546,11 +320,16 @@
         this.master = this.ctx.createGain();
         this.master.gain.value = parseFloat(ui.vol.value);
         this.master.connect(this.ctx.destination);
+        // tap for recording
+        this.recDest = this.ctx.createMediaStreamDestination();
+        this.master.connect(this.recDest);
+
         this.mode = ui.musicMode.value;
         this.loopHandle = null;
         this.userBuffer = null;
         this.userSource = null;
       }
+      getStream(){ return this.recDest.stream; }
       setVolume(v){ this.master.gain.value = v; }
       setMode(m){ this.mode = m; }
       async start(){
@@ -564,7 +343,7 @@
               src.connect(this.master); src.start();
               this.userSource = src;
             }
-            await new Promise(r=>setTimeout(r, 1000)); // keep loop alive
+            await new Promise(r=>setTimeout(r, 1000));
           } else {
             this.playMode();
             await this.sleep(8500);
@@ -609,8 +388,8 @@
         const m = this.mode;
         if (m === 'major') this.pad([0,4,7], 8, 246, 'sine', 0.12, 1000, 0.04);
         else if (m === 'minor') this.pad([0,3,7], 8, 196, 'sine', 0.11, 900, 0.04);
-        else if (m === 'calm')  this.pad([0,7], 10, 174, 'sine', 0.09, 600, 0.03); // mais grave e suave
-        else                    this.pad([0,3,7,10], 8, 220, 'sine', 0.10, 800, 0.05); // ambient
+        else if (m === 'calm')  this.pad([0,7], 10, 174, 'sine', 0.09, 600, 0.03);
+        else                    this.pad([0,3,7,10], 8, 220, 'sine', 0.10, 800, 0.05);
       }
       bell(){
         const freqs = [880, 1320, 1760];
@@ -645,8 +424,8 @@
         ui.musicToggle.textContent = 'Tocar';
       }
     });
-    ui.vol.addEventListener('input', ()=>{ musicEngine && musicEngine.setVolume(parseFloat(ui.vol.value)); });
     ui.musicMode.addEventListener('change', ()=>{ musicEngine && musicEngine.setMode(ui.musicMode.value); });
+    ui.vol.addEventListener('input', ()=>{ musicEngine && musicEngine.setVolume(parseFloat(ui.vol.value)); });
     ui.audioFile.addEventListener('change', async (e)=>{
       const file = e.target.files?.[0];
       if (!file) return;
@@ -656,6 +435,50 @@
       ui.musicToggle.textContent = 'Parar';
     });
 
+    // ====== Recording (canvas + app audio) ======
+    let recorder = null, recChunks = [], recUrl = null;
+    async function startRecording(){
+      if (recorder) return;
+      ui.recStatus.textContent = 'a preparar…'; ui.recStatus.className = 'pill warn';
+      const fps = parseInt(ui.recFps.value,10);
+      const canvasStream = canvas.captureStream(fps);
+      const mixed = new MediaStream();
+      // video
+      const vtrack = canvasStream.getVideoTracks()[0];
+      if (vtrack) mixed.addTrack(vtrack);
+      // audio (app music)
+      if (!musicEngine){ musicEngine = new Music(); await musicEngine.start(); ui.musicToggle.textContent='Parar'; }
+      const audioStream = musicEngine.getStream();
+      audioStream.getAudioTracks().forEach(t=> mixed.addTrack(t));
+      // recorder
+      let opts = { mimeType: 'video/webm;codecs=vp9,opus' };
+      if (!MediaRecorder.isTypeSupported(opts.mimeType)) opts = { mimeType: 'video/webm;codecs=vp8,opus' };
+      if (!MediaRecorder.isTypeSupported(opts.mimeType)) opts = { mimeType: 'video/webm' };
+      recorder = new MediaRecorder(mixed, opts);
+      recChunks = [];
+      recorder.ondataavailable = e => { if(e.data && e.data.size) recChunks.push(e.data); };
+      recorder.onstop = ()=>{
+        const blob = new Blob(recChunks, {type: 'video/webm'});
+        recUrl && URL.revokeObjectURL(recUrl);
+        recUrl = URL.createObjectURL(blob);
+        ui.recDownload.href = recUrl;
+        ui.recDownload.style.display = 'inline-block';
+        ui.recStatus.textContent = 'pronto para baixar'; ui.recStatus.className = 'pill ok';
+      };
+      recorder.start();
+      ui.recStart.disabled = true; ui.recStop.disabled = false;
+      ui.recStatus.textContent = 'a gravar…'; ui.recStatus.className = 'pill ok';
+    }
+    function stopRecording(){
+      if (!recorder) return;
+      recorder.stop();
+      recorder = null;
+      ui.recStart.disabled = false; ui.recStop.disabled = true;
+    }
+    ui.recStart.addEventListener('click', startRecording);
+    ui.recStop.addEventListener('click', stopRecording);
+
+    // Make sure audio can play after user gesture (iOS)
     ['click','keydown','touchstart'].forEach(ev=>{
       document.addEventListener(ev, async ()=>{
         try{ if (musicEngine?.ctx?.state === 'suspended') await musicEngine.ctx.resume(); }catch{}
