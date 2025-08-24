@@ -1,0 +1,39 @@
+body {
+  margin: 0;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  display: flex;
+  height: 100vh;
+  background: #111;
+  color: #f2f2f2;
+  overflow: hidden;
+}
+.sidebar { width: 260px; background: #000; color: #f2f2f2; display: flex; flex-direction: column; border-right: 1px solid #222; }
+.sidebar h2 { margin: 0; padding: 16px; font-size: 18px; font-weight: bold; background: #111; border-bottom: 1px solid #222; }
+.contacts { flex: 1; overflow: auto; }
+.contacts div { padding: 14px; cursor: pointer; border-bottom: 1px solid #222; position: relative; transition: background 0.2s; }
+.contacts div:hover { background: #1a1a1a; }
+.pin { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; }
+.chat { flex: 1; display: flex; flex-direction: column; background: #111; overflow: hidden; }
+.chat-header { padding: 16px; background: #000; color: #f2f2f2; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; }
+.messages { flex: 1; overflow: auto; padding: 16px; position: relative; scroll-behavior: smooth; }
+.msg { max-width: 70%; margin: 8px 0; padding: 10px 14px; border-radius: 18px; position: relative; font-size: 15px; line-height: 1.4; animation: slideIn 0.25s ease; }
+.sent { background: #0a84ff; color: #fff; margin-left: auto; border-bottom-right-radius: 6px; }
+.received { background: #222; color: #f2f2f2; margin-right: auto; border-bottom-left-radius: 6px; }
+.time { font-size: 11px; opacity: 0.6; position: absolute; bottom: 4px; right: 10px; }
+.actions { display: none; position: absolute; top: -18px; right: 0; background: #000; border: 1px solid #333; border-radius: 12px; padding: 4px 6px; gap: 6px; z-index: 2; }
+.msg:hover .actions { display: flex; }
+.action { cursor: pointer; font-size: 13px; padding: 2px 4px; }
+.input { display: flex; padding: 12px; background: #000; border-top: 1px solid #222; }
+.input textarea { flex: 1; resize: none; border-radius: 20px; padding: 10px 14px; border: 1px solid #333; background: #111; color: #f2f2f2; }
+.input button { margin-left: 8px; padding: 10px 16px; background: #0a84ff; color: #fff; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+.input button:hover { background: #006be6; }
+.reply-preview { font-size: 12px; color: #ccc; background: #1a1a1a; border-left: 3px solid #0a84ff; padding: 6px 10px; margin: 4px; border-radius: 6px; }
+.pinned { background: #ffd24d; color: #000; font-size: 11px; border-radius: 6px; padding: 2px 6px; margin-left: 4px; }
+.reactions { margin-top: 4px; font-size: 16px; display: flex; gap: 6px; animation: fadeIn 0.3s ease; }
+.reaction-menu { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-6px); background: #1a1a1a; border: 1px solid #333; border-radius: 24px; display: flex; gap: 10px; padding: 6px 10px; z-index: 5; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6); animation: fadeIn 0.2s ease; }
+.reaction-menu span { cursor: pointer; font-size: 20px; transition: transform 0.15s; }
+.reaction-menu span:hover { transform: scale(1.3); }
+.floating { position: absolute; bottom: 40px; right: 20px; font-size: 26px; animation: floatUp 2s ease forwards; pointer-events: none; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-120px) scale(1.6); } }

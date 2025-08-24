@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LUMO — Chat em Tempo Real</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <h2>LUMO</h2>
+    <div class="contacts" id="contactList"></div>
+  </aside>
+  <main class="chat">
+    <div class="chat-header">
+      <span id="chatHeader">Seleciona uma conversa</span>
+      <button onclick="exportChat()">📝 Exportar</button>
+    </div>
+    <div class="messages" id="chatMessages"></div>
+    <div id="replyBox" class="reply-preview" style="display:none"></div>
+    <div class="input">
+      <textarea id="messageInput" rows="1" placeholder="Escreve uma mensagem…"></textarea>
+      <button onclick="sendMessage()">Enviar</button>
+    </div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
