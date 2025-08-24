@@ -1,0 +1,14 @@
+{
+  "name": "tts-backend-azure",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {},
+  "scripts": {
+    "vercel-build": "echo 'Vercel will deploy serverless function in /api'",
+    "start": "node server.js"
+  }
+}
